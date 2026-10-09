@@ -22,18 +22,12 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    viewBinding {
-        enabled = true
-    }
 }
 
 dependencies {
 
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'com.google.android.material:material:1.2.0'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    api 'com.github.hss01248.utilcodeEnhance:lib-base-base:1.6.0'
-    api 'com.github.hss01248.MyPermission:ext:2.3.9'
+    // Photo Picker Activity Result contracts，需 1.7.0+
+    implementation 'androidx.activity:activity:1.8.2'
+    api "com.hss01248.utilcodeEnhanceX:lib-base-base:2.2.49.14"
 
 }

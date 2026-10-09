@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="accessibility_service_description">感知顶部app名字</string>
+    <string name="media_picker_lib_name">android-photo-picker</string>
 </resources>

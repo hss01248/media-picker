@@ -33,7 +33,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.2.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    api 'com.github.hss01248.utilcodeEnhance:lib-base-base:1.6.0'
+    api "com.hss01248.utilcodeEnhanceX:lib-base-base:2.2.49.14"
     api 'com.github.hss01248.MyPermission:ext:2.3.9'
 
 }
