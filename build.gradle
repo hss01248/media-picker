@@ -13,11 +13,13 @@ buildscript {
     //apply from: 'https://raw.githubusercontent.com/skyNet2017/AppUpdate/master/uploadToPyger.gradle'
     ext.kotlin_version = '1.9.0'
 
-    // maven publish configuration
+    // maven publish configuration（JitPack 会传 -Pgroup / -Pversion）
     ext {
-        groupId = 'x.x.x'      // 从原先的 maven 相关插件配置里读取，如果没有，就保留 x.x.x
-        versionCode = 'x.x.x'           // 从原先的 maven 相关插件配置里读取，如果没有，就保留 x.x.x
+        groupId = (findProperty('group') ?: 'com.github.hss01248').toString()
+        versionCode = (findProperty('version') ?: '1.0.0').toString()
         isPublisToLocal = true
+        // uploadAllByMavenPublish 默认在 Linux 跳过发布配置；JitPack 需要打开
+        needPublishWhenLinux = true
     }
 
     dependencies {

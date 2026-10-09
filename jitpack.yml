@@ -1,2 +1,4 @@
 jdk:
-  - openjdk11
+  - openjdk17
+install:
+  - ./gradlew clean :android-photo-picker:publishToMavenLocal :screenshoot:publishToMavenLocal -x test
