@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * 将 content/file Uri 拷贝到应用外部私有目录的工具类，可独立于 Photo Picker 使用。
@@ -30,16 +31,25 @@ public final class MediaCopyUtil {
     public static final String COPY_SUB_DIR = "media_picker";
 
     private static final int BUFFER_SIZE = 8192;
+    private static final Pattern SAFE_EXT = Pattern.compile("^\\.[a-z0-9]{1,10}$");
 
     private MediaCopyUtil() {
     }
 
     /**
      * 将 Uri 拷贝到应用外部私有目录，返回绝对路径。
-     * 图片 → {@link Environment#DIRECTORY_PICTURES}/media_picker/
-     * 视频 → {@link Environment#DIRECTORY_MOVIES}/media_picker/
      */
     public static String copyUriToExternalPrivateDir(Context context, Uri uri) throws Exception {
+        return copyUriToExternalPrivateDir(context, uri, 0L);
+    }
+
+    /**
+     * 将 Uri 拷贝到应用外部私有目录。
+     *
+     * @param maxBytes 最大字节数，&lt;=0 表示不限制；超限会删除半截文件并抛异常
+     */
+    public static String copyUriToExternalPrivateDir(Context context, Uri uri, long maxBytes)
+            throws Exception {
         if (context == null) {
             throw new IllegalArgumentException("context is null");
         }
@@ -63,6 +73,10 @@ public final class MediaCopyUtil {
                 + UUID.randomUUID().toString().replace("-", "").substring(0, 8)
                 + ext;
         File dest = new File(dir, fileName);
+        // 二次校验：禁止目标逃出目录
+        if (!isUnderDir(dest, dir)) {
+            throw new IllegalStateException("unsafe destination path: " + dest.getAbsolutePath());
+        }
 
         ContentResolver resolver = context.getContentResolver();
         try (InputStream in = resolver.openInputStream(uri);
@@ -71,11 +85,21 @@ public final class MediaCopyUtil {
                 throw new IllegalStateException("openInputStream returned null: " + uri);
             }
             byte[] buf = new byte[BUFFER_SIZE];
+            long written = 0;
             int read;
             while ((read = in.read(buf)) != -1) {
+                written += read;
+                if (maxBytes > 0 && written > maxBytes) {
+                    throw new IllegalStateException(
+                            "file too large while copying: " + written + " > " + maxBytes);
+                }
                 out.write(buf, 0, read);
             }
             out.flush();
+        } catch (Exception e) {
+            //noinspection ResultOfMethodCallIgnored
+            dest.delete();
+            throw e;
         }
         return dest.getAbsolutePath();
     }
@@ -83,17 +107,21 @@ public final class MediaCopyUtil {
     /**
      * @param uriString Uri.toString()，如 content://...
      */
-    public static String copyUriToExternalPrivateDir(Context context, String uriString) throws Exception {
+    public static String copyUriToExternalPrivateDir(Context context, String uriString)
+            throws Exception {
+        return copyUriToExternalPrivateDir(context, uriString, 0L);
+    }
+
+    public static String copyUriToExternalPrivateDir(Context context, String uriString, long maxBytes)
+            throws Exception {
         if (TextUtils.isEmpty(uriString)) {
             throw new IllegalArgumentException("uriString is empty");
         }
-        return copyUriToExternalPrivateDir(context, Uri.parse(uriString));
+        return copyUriToExternalPrivateDir(context, Uri.parse(uriString), maxBytes);
     }
 
     /**
      * 批量拷贝，跳过失败项；失败打日志。
-     *
-     * @return 成功拷贝后的绝对路径列表
      */
     public static List<String> copyUrisToExternalPrivateDir(Context context, Collection<Uri> uris) {
         List<String> result = new ArrayList<>();
@@ -135,6 +163,57 @@ public final class MediaCopyUtil {
         return result;
     }
 
+    /**
+     * 判断绝对路径是否位于应用的 media_picker 拷贝目录内。
+     */
+    public static boolean isCopiedMediaPath(Context context, String path) {
+        if (context == null || TextUtils.isEmpty(path)) {
+            return false;
+        }
+        if (path.startsWith("content:") || path.startsWith("file:")) {
+            return false;
+        }
+        try {
+            File target = new File(path).getCanonicalFile();
+            for (File root : copyRoots(context)) {
+                if (root != null && isUnderDir(target, root)) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            LogUtils.w(e);
+        }
+        return false;
+    }
+
+    static File[] copyRoots(Context context) {
+        return new File[]{
+                subDir(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)),
+                subDir(context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)),
+                subDir(context.getFilesDir())
+        };
+    }
+
+    private static File subDir(File base) {
+        return base == null ? null : new File(base, COPY_SUB_DIR);
+    }
+
+    static boolean isUnderDir(File file, File dir) {
+        if (file == null || dir == null) {
+            return false;
+        }
+        try {
+            String filePath = file.getCanonicalPath();
+            String dirPath = dir.getCanonicalPath();
+            if (!dirPath.endsWith(File.separator)) {
+                dirPath = dirPath + File.separator;
+            }
+            return filePath.equals(dir.getCanonicalPath()) || filePath.startsWith(dirPath);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static boolean isVideo(Context context, Uri uri) {
         String mime = getMimeType(context, uri);
         return mime != null && mime.toLowerCase(Locale.US).startsWith("video/");
@@ -155,7 +234,9 @@ public final class MediaCopyUtil {
             int dot = path.lastIndexOf('.');
             if (dot >= 0 && dot < path.length() - 1) {
                 String ext = path.substring(dot + 1).toLowerCase(Locale.US);
-                return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+                if (ext.matches("[a-z0-9]{1,10}")) {
+                    return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+                }
             }
         }
         return null;
@@ -180,15 +261,21 @@ public final class MediaCopyUtil {
     }
 
     private static String guessExtension(String mime, String displayName) {
-        if (!TextUtils.isEmpty(displayName)) {
+        if (!TextUtils.isEmpty(displayName)
+                && !displayName.contains("/")
+                && !displayName.contains("\\")
+                && !displayName.contains("..")) {
             int dot = displayName.lastIndexOf('.');
             if (dot >= 0 && dot < displayName.length() - 1) {
-                return displayName.substring(dot).toLowerCase(Locale.US);
+                String ext = displayName.substring(dot).toLowerCase(Locale.US);
+                if (SAFE_EXT.matcher(ext).matches()) {
+                    return ext;
+                }
             }
         }
         if (!TextUtils.isEmpty(mime)) {
             String ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mime);
-            if (!TextUtils.isEmpty(ext)) {
+            if (!TextUtils.isEmpty(ext) && ext.matches("[a-z0-9]{1,10}")) {
                 return "." + ext;
             }
             if (mime.startsWith("image/")) {

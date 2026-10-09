@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
                 toast("没有可删除的路径");
                 return;
             }
-            int n = MediaPickerFileUtil.deleteCopiedFiles(lastResults);
+            int n = MediaPickerFileUtil.deleteCopiedFiles(this, lastResults);
             String msg = "删除本地路径: " + n + "/" + lastResults.size();
             lastResults.clear();
             appendResult(msg);

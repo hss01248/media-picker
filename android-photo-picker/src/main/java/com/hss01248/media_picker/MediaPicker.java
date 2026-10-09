@@ -56,7 +56,7 @@ public class MediaPicker {
 
     /**
      * 最多可选视频数量。默认 1；0 表示不单独限制视频数量。
-     * 官方 Photo Picker 无法在 UI 层区分图片/视频上限，会在选择后过滤。
+     * 官方 Photo Picker 无法在 UI 层区分图片/视频上限；超出项选择后过滤，规则同文件大小/时长限制。
      */
     public MediaPicker maxVideoSelectNum(@IntRange(from = 0) int maxVideoSelectNum) {
         config.maxVideoSelectNum = Math.max(0, maxVideoSelectNum);
@@ -64,7 +64,9 @@ public class MediaPicker {
     }
 
     /**
-     * 单文件大小上限，单位 MB。0 表示不限制。超出则丢弃并回调 {@link TakePhotoListener#onFail}。
+     * 单文件大小上限，单位 MB。0 表示不限制。
+     * 超出项会被过滤：若仍有合法项则 Toast 汇总并 {@link TakePhotoListener#onSuccess}；
+     * 若全部被过滤则汇总 msg 经 {@link TakePhotoListener#onFail} 返回（不 Toast）。
      */
     public MediaPicker queryMaxFileSize(@FloatRange(from = 0) float maxFileSizeMb) {
         config.maxFileSizeMb = Math.max(0f, maxFileSizeMb);
@@ -72,7 +74,9 @@ public class MediaPicker {
     }
 
     /**
-     * 视频时长上限，单位秒。0 表示不限制。超出则丢弃并回调 {@link TakePhotoListener#onFail}。
+     * 视频时长上限，单位秒。0 表示不限制。
+     * 超出项会被过滤：若仍有合法项则 Toast 汇总并 {@link TakePhotoListener#onSuccess}；
+     * 若全部被过滤则汇总 msg 经 {@link TakePhotoListener#onFail} 返回（不 Toast）。
      */
     public MediaPicker videoMaxSecond(@IntRange(from = 0) int videoMaxSecond) {
         config.videoMaxSecond = Math.max(0, videoMaxSecond);
@@ -97,6 +101,7 @@ public class MediaPicker {
 
     /**
      * 是否将所选媒体拷贝到应用外部私有目录。默认 false。
+     * 若开启，会在过滤完成后再拷贝，仅拷贝符合条件的项。
      * <ul>
      *   <li>false：{@link TakePhotoListener#onSuccess} 返回 Uri 字符串（如 content://...）</li>
      *   <li>true：拷贝后返回本地绝对路径；也可单独用 {@link MediaCopyUtil}</li>

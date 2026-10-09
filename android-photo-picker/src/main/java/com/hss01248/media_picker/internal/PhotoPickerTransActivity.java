@@ -7,6 +7,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
+import android.widget.Toast;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResultLauncher;
@@ -16,6 +18,7 @@ import androidx.annotation.Nullable;
 
 import com.blankj.utilcode.util.LogUtils;
 import com.hss01248.media_picker.MediaCopyUtil;
+import com.hss01248.media_picker.R;
 import com.hss01248.media_picker.TakePhotoListener;
 
 import java.util.ArrayList;
@@ -29,11 +32,11 @@ import java.util.concurrent.Executors;
 public class PhotoPickerTransActivity extends ComponentActivity {
 
     private static final String EXTRA_CONFIG = "extra_photo_picker_config";
-
-    private static TakePhotoListener sListener;
-    private static PhotoPickerConfig sConfig;
+    private static final String EXTRA_REQUEST_ID = "extra_photo_picker_request_id";
+    private static final String STATE_LAUNCHED = "state_picker_launched";
 
     private PhotoPickerConfig config;
+    private String requestId;
     private TakePhotoListener listener;
     private boolean launched;
     private boolean finishedWithCallback;
@@ -45,31 +48,31 @@ public class PhotoPickerTransActivity extends ComponentActivity {
     private ActivityResultLauncher<PickVisualMediaRequest> multiLauncher;
 
     public static void start(Context context, PhotoPickerConfig config, TakePhotoListener listener) {
-        sListener = listener;
-        sConfig = config;
-        Intent intent = buildIntent(context, config);
+        String requestId = PhotoPickerCallbacks.put(listener);
+        Intent intent = new Intent(context, PhotoPickerTransActivity.class);
+        intent.putExtra(EXTRA_CONFIG, config);
+        intent.putExtra(EXTRA_REQUEST_ID, requestId);
         if (!(context instanceof Activity)) {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
-        context.startActivity(intent);
-    }
-
-    static Intent buildIntent(Context context, PhotoPickerConfig config) {
-        Intent intent = new Intent(context, PhotoPickerTransActivity.class);
-        intent.putExtra(EXTRA_CONFIG, config);
-        return intent;
+        try {
+            context.startActivity(intent);
+        } catch (RuntimeException e) {
+            PhotoPickerCallbacks.remove(requestId);
+            throw e;
+        }
     }
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        listener = sListener;
-        sListener = null;
-        config = sConfig != null ? sConfig : (PhotoPickerConfig) getIntent().getSerializableExtra(EXTRA_CONFIG);
-        sConfig = null;
+        requestId = getIntent().getStringExtra(EXTRA_REQUEST_ID);
+        config = (PhotoPickerConfig) getIntent().getSerializableExtra(EXTRA_CONFIG);
+        listener = PhotoPickerCallbacks.get(requestId);
 
         if (listener == null || config == null) {
-            LogUtils.e("PhotoPickerTransActivity: missing listener or config");
+            LogUtils.e("PhotoPickerTransActivity: missing listener or config, requestId=" + requestId);
+            PhotoPickerCallbacks.remove(requestId);
             finish();
             return;
         }
@@ -86,9 +89,18 @@ public class PhotoPickerTransActivity extends ComponentActivity {
                     uris -> handleUris(uris == null ? new ArrayList<>() : uris));
         }
 
-        if (savedInstanceState == null) {
+        if (savedInstanceState != null) {
+            launched = savedInstanceState.getBoolean(STATE_LAUNCHED, false);
+        }
+        if (!launched) {
             launchPicker();
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(STATE_LAUNCHED, launched);
     }
 
     private void launchPicker() {
@@ -117,9 +129,7 @@ public class PhotoPickerTransActivity extends ComponentActivity {
     }
 
     private int resolveMaxItems() {
-        // PickMultipleVisualMedia 要求 > 1
         int max = Math.max(2, config.maxSelectNum);
-        // 系统 Photo Picker 通常上限为 100
         return Math.min(max, 100);
     }
 
@@ -132,7 +142,50 @@ public class PhotoPickerTransActivity extends ComponentActivity {
     }
 
     private void processOnBackground(List<Uri> uris) {
-        List<String> successPaths = new ArrayList<>();
+        FilterSkipCollector skips = new FilterSkipCollector();
+        // 1) 先过滤，只保留符合条件的 Uri（此阶段不拷贝）
+        List<Uri> accepted = filterAccepted(uris, skips);
+
+        if (accepted.isEmpty()) {
+            String summaryMsg = skips.buildToastMessage(this, config);
+            String failMsg = TextUtils.isEmpty(summaryMsg)
+                    ? getString(R.string.media_picker_fail_all_filtered)
+                    : summaryMsg;
+            notifyFailAndFinish("", failMsg);
+            return;
+        }
+
+        // 2) 仅对过滤后的项拷贝（或直接返回 Uri 字符串）
+        List<String> successPaths = new ArrayList<>(accepted.size());
+        for (Uri uri : accepted) {
+            try {
+                if (config.copyToPath) {
+                    successPaths.add(MediaCopyUtil.copyUriToExternalPrivateDir(this, uri));
+                } else {
+                    successPaths.add(uri.toString());
+                }
+            } catch (Exception e) {
+                LogUtils.e(e);
+                skips.other();
+            }
+        }
+
+        String summaryMsg = skips.buildToastMessage(this, config);
+        if (successPaths.isEmpty()) {
+            String failMsg = TextUtils.isEmpty(summaryMsg)
+                    ? getString(R.string.media_picker_fail_all_filtered)
+                    : summaryMsg;
+            notifyFailAndFinish("", failMsg);
+            return;
+        }
+        deliverSuccess(successPaths, summaryMsg);
+    }
+
+    /**
+     * 按配置过滤，返回符合条件的 Uri 列表；超限/不合规项计入 {@code skips}，不触发拷贝。
+     */
+    private List<Uri> filterAccepted(List<Uri> uris, FilterSkipCollector skips) {
+        List<Uri> accepted = new ArrayList<>();
         int videoKept = 0;
         int maxVideo = config.maxVideoSelectNum <= 0 ? Integer.MAX_VALUE : config.maxVideoSelectNum;
         long maxBytes = config.maxFileSizeMb > 0
@@ -151,28 +204,31 @@ public class PhotoPickerTransActivity extends ComponentActivity {
                 boolean image = MediaUriHelper.isImage(this, uri);
 
                 if (video && !config.withVideo) {
-                    notifyFail(uri.toString(), "video not allowed");
+                    skips.other();
                     continue;
                 }
                 if (image && !config.withImage) {
-                    notifyFail(uri.toString(), "image not allowed");
+                    skips.other();
                     continue;
                 }
                 if (!video && !image) {
-                    notifyFail(uri.toString(), "unsupported media type");
+                    skips.other();
                     continue;
                 }
 
                 if (video) {
                     if (videoKept >= maxVideo) {
-                        notifyFail(uri.toString(), "exceed maxVideoSelectNum: " + maxVideo);
+                        skips.exceedMaxVideo();
                         continue;
                     }
                     if (maxDurationMs > 0) {
                         long duration = MediaUriHelper.getVideoDurationMs(this, uri);
+                        if (duration < 0) {
+                            skips.other();
+                            continue;
+                        }
                         if (duration > maxDurationMs) {
-                            notifyFail(uri.toString(),
-                                    "video too long: " + (duration / 1000) + "s > " + config.videoMaxSecond + "s");
+                            skips.videoTooLong();
                             continue;
                         }
                     }
@@ -180,80 +236,90 @@ public class PhotoPickerTransActivity extends ComponentActivity {
 
                 if (maxBytes > 0) {
                     long size = MediaUriHelper.getFileSize(this, uri);
-                    if (size >= 0 && size > maxBytes) {
-                        notifyFail(uri.toString(),
-                                "file too large: " + size + " > " + maxBytes + " bytes");
+                    if (size < 0) {
+                        // 大小未知，无法在过滤阶段判定，跳过（不边拷边限）
+                        skips.other();
+                        continue;
+                    }
+                    if (size > maxBytes) {
+                        skips.fileTooLarge();
                         continue;
                     }
                 }
 
-                if (successPaths.size() >= config.maxSelectNum) {
-                    notifyFail(uri.toString(), "exceed maxSelectNum: " + config.maxSelectNum);
+                if (accepted.size() >= config.maxSelectNum) {
+                    skips.exceedMaxSelect();
                     continue;
                 }
 
-                if (config.copyToPath) {
-                    String path = MediaCopyUtil.copyUriToExternalPrivateDir(this, uri);
-                    successPaths.add(path);
-                } else {
-                    successPaths.add(uri.toString());
-                }
+                accepted.add(uri);
                 if (video) {
                     videoKept++;
                 }
             } catch (Exception e) {
                 LogUtils.e(e);
-                notifyFail(uri.toString(), e.getMessage() == null ? "process failed" : e.getMessage());
+                skips.other();
             }
         }
-
-        if (successPaths.isEmpty()) {
-            notifyFailMain("", "no valid media after filter");
-            finishSafely();
-            return;
-        }
-        deliverSuccess(successPaths);
+        return accepted;
     }
 
-    private void notifyFail(String path, String msg) {
-        mainHandler.post(() -> {
-            if (listener != null) {
-                listener.onFail(path, msg);
-            }
-        });
-    }
-
-    private void notifyFailMain(String path, String msg) {
-        mainHandler.post(() -> {
-            if (listener != null) {
-                listener.onFail(path, msg);
-            }
-            finishSafely();
-        });
-    }
-
-    private void deliverSuccess(List<String> paths) {
+    private void notifyFailAndFinish(String path, String msg) {
         mainHandler.post(() -> {
             if (finishedWithCallback) {
                 return;
             }
             finishedWithCallback = true;
-            if (listener != null) {
-                listener.onSuccess(paths);
+            TakePhotoListener l = takeListener();
+            if (l != null) {
+                l.onFail(path, msg);
             }
             finishSafely();
         });
     }
 
-    private void deliverCancel() {
-        if (finishedWithCallback) {
+    private void deliverSuccess(List<String> paths, String toastMsg) {
+        mainHandler.post(() -> {
+            if (finishedWithCallback) {
+                return;
+            }
+            finishedWithCallback = true;
+            showFilterToast(toastMsg);
+            TakePhotoListener l = takeListener();
+            if (l != null) {
+                l.onSuccess(paths);
+            }
+            finishSafely();
+        });
+    }
+
+    private void showFilterToast(String toastMsg) {
+        if (TextUtils.isEmpty(toastMsg)) {
             return;
         }
-        finishedWithCallback = true;
-        if (listener != null) {
-            listener.onCancel();
+        Toast.makeText(getApplicationContext(), toastMsg, Toast.LENGTH_LONG).show();
+    }
+
+    private void deliverCancel() {
+        mainHandler.post(() -> {
+            if (finishedWithCallback) {
+                return;
+            }
+            finishedWithCallback = true;
+            TakePhotoListener l = takeListener();
+            if (l != null) {
+                l.onCancel();
+            }
+            finishSafely();
+        });
+    }
+
+    private TakePhotoListener takeListener() {
+        TakePhotoListener l = PhotoPickerCallbacks.remove(requestId);
+        if (l != null) {
+            listener = null;
         }
-        finishSafely();
+        return l != null ? l : listener;
     }
 
     private void finishSafely() {
@@ -271,6 +337,18 @@ public class PhotoPickerTransActivity extends ComponentActivity {
     @Override
     protected void onDestroy() {
         ioExecutor.shutdownNow();
+        // 异常销毁且尚未回调时清理，避免 Map 泄漏；尽量通知取消
+        if (isFinishing() && !finishedWithCallback && requestId != null) {
+            finishedWithCallback = true;
+            TakePhotoListener l = PhotoPickerCallbacks.remove(requestId);
+            if (l != null) {
+                try {
+                    l.onCancel();
+                } catch (Exception e) {
+                    LogUtils.w(e);
+                }
+            }
+        }
         super.onDestroy();
     }
 }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="media_picker_skip_file_too_large">%1$d file melebihi ukuran maks (%2$s MB)</string>
+    <string name="media_picker_skip_video_too_long">%1$d video melebihi durasi maks (%2$d detik)</string>
+    <string name="media_picker_skip_max_video">%1$d video melebihi jumlah video maks (%2$d)</string>
+    <string name="media_picker_skip_max_select">%1$d item melebihi jumlah pilihan maks (%2$d)</string>
+    <string name="media_picker_skip_other">%1$d item dilewati</string>
+    <string name="media_picker_fail_all_filtered">Tidak ada media valid setelah filter</string>
+</resources>

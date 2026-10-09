@@ -23,16 +23,5 @@
                 android:name="photopicker_activity:0:required"
                 android:value="" />
         </service>
-
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="${applicationId}.androidx-startup"
-            android:exported="false"
-            tools:node="merge">
-            <meta-data
-                tools:node="merge"
-                android:name="com.hss01248.media_picker.CrashInit"
-                android:value="androidx.startup" />
-        </provider>
     </application>
 </manifest>

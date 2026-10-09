@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="media_picker_lib_name">android-photo-picker</string>
+
+    <string name="media_picker_skip_file_too_large">%1$d file(s) exceed max size (%2$s MB)</string>
+    <string name="media_picker_skip_video_too_long">%1$d video(s) exceed max duration (%2$d s)</string>
+    <string name="media_picker_skip_max_video">%1$d video(s) exceed max video count (%2$d)</string>
+    <string name="media_picker_skip_max_select">%1$d item(s) exceed max selection (%2$d)</string>
+    <string name="media_picker_skip_other">%1$d item(s) skipped</string>
+    <string name="media_picker_fail_all_filtered">No valid media after filter</string>
 </resources>

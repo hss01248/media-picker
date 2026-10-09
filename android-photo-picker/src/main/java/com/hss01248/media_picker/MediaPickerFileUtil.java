@@ -1,7 +1,6 @@
 package com.hss01248.media_picker;
 
 import android.content.Context;
-import android.os.Environment;
 import android.text.TextUtils;
 
 import com.blankj.utilcode.util.LogUtils;
@@ -18,21 +17,27 @@ public final class MediaPickerFileUtil {
     }
 
     /**
-     * 删除单个拷贝文件。
+     * 删除单个拷贝文件。仅允许删除 {@link MediaCopyUtil#COPY_SUB_DIR} 目录内的文件。
      *
      * @return true 表示文件已不存在或删除成功
      */
-    public static boolean deleteCopiedFile(String path) {
-        if (TextUtils.isEmpty(path)) {
+    public static boolean deleteCopiedFile(Context context, String path) {
+        if (context == null || TextUtils.isEmpty(path)) {
             return false;
         }
-        // Uri 字符串不是本地路径，直接跳过
         if (path.startsWith("content:") || path.startsWith("file:")) {
+            return false;
+        }
+        if (!MediaCopyUtil.isCopiedMediaPath(context, path)) {
+            LogUtils.w("deleteCopiedFile rejected (not under media_picker): " + path);
             return false;
         }
         File file = new File(path);
         if (!file.exists()) {
             return true;
+        }
+        if (!file.isFile()) {
+            return false;
         }
         boolean ok = file.delete();
         if (!ok) {
@@ -44,13 +49,13 @@ public final class MediaPickerFileUtil {
     /**
      * 批量删除拷贝文件，返回成功删除（或不存在）的数量。
      */
-    public static int deleteCopiedFiles(Collection<String> paths) {
-        if (paths == null || paths.isEmpty()) {
+    public static int deleteCopiedFiles(Context context, Collection<String> paths) {
+        if (context == null || paths == null || paths.isEmpty()) {
             return 0;
         }
         int count = 0;
         for (String path : paths) {
-            if (deleteCopiedFile(path)) {
+            if (deleteCopiedFile(context, path)) {
                 count++;
             }
         }
@@ -58,7 +63,7 @@ public final class MediaPickerFileUtil {
     }
 
     /**
-     * 清空 Pictures/Movies 下 media_picker 目录中的所有拷贝文件。
+     * 清空 Pictures/Movies/files 下 media_picker 目录中的所有拷贝文件。
      *
      * @return 删除的文件数
      */
@@ -67,18 +72,14 @@ public final class MediaPickerFileUtil {
             return 0;
         }
         int count = 0;
-        count += clearDir(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES));
-        count += clearDir(context.getExternalFilesDir(Environment.DIRECTORY_MOVIES));
-        count += clearDir(context.getFilesDir());
+        for (File root : MediaCopyUtil.copyRoots(context)) {
+            count += clearDir(root);
+        }
         return count;
     }
 
-    private static int clearDir(File base) {
-        if (base == null) {
-            return 0;
-        }
-        File dir = new File(base, MediaCopyUtil.COPY_SUB_DIR);
-        if (!dir.exists() || !dir.isDirectory()) {
+    private static int clearDir(File dir) {
+        if (dir == null || !dir.exists() || !dir.isDirectory()) {
             return 0;
         }
         File[] files = dir.listFiles();
