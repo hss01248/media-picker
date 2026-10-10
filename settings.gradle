@@ -4,4 +4,5 @@ rootProject.name = "ScreenshotApp"
 include ':screenshoot'
 include ':app'
 include ':android-photo-picker'
+include ':picker-camera-wrapper'
 
