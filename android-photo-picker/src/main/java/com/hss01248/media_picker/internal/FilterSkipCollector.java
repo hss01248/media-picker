@@ -44,7 +44,11 @@ final class FilterSkipCollector {
         return fileTooLarge + videoTooLong + exceedMaxVideo + exceedMaxSelect + other > 0;
     }
 
-    String buildToastMessage(Context context, PhotoPickerConfig config) {
+    boolean hasExceedCountSkips() {
+        return exceedMaxVideo + exceedMaxSelect > 0;
+    }
+
+    String buildSummaryMessage(Context context, PhotoPickerConfig config) {
         if (!hasSkips()) {
             return "";
         }

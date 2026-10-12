@@ -2,6 +2,7 @@ package com.hss01248.media_picker;
 
 import android.app.Activity;
 import android.content.Context;
+import android.net.Uri;
 
 import androidx.annotation.FloatRange;
 import androidx.annotation.IntRange;
@@ -10,6 +11,8 @@ import androidx.fragment.app.FragmentActivity;
 
 import com.hss01248.media_picker.internal.PhotoPickerConfig;
 import com.hss01248.media_picker.internal.PhotoPickerLauncher;
+
+import java.util.List;
 
 /**
  * Android 官方 Photo Picker 封装。
@@ -56,7 +59,7 @@ public class MediaPicker {
 
     /**
      * 最多可选视频数量。默认 1；0 表示不单独限制视频数量。
-     * 官方 Photo Picker 无法在 UI 层区分图片/视频上限；超出项选择后过滤，规则同文件大小/时长限制。
+     * 官方 Photo Picker 无法在 UI 层区分图片/视频上限；超出项选择后进入过滤确认弹窗。
      */
     public MediaPicker maxVideoSelectNum(@IntRange(from = 0) int maxVideoSelectNum) {
         config.maxVideoSelectNum = Math.max(0, maxVideoSelectNum);
@@ -65,8 +68,8 @@ public class MediaPicker {
 
     /**
      * 单文件大小上限，单位 MB。0 表示不限制。
-     * 超出项会被过滤：若仍有合法项则 Toast 汇总并 {@link TakePhotoListener#onSuccess}；
-     * 若全部被过滤则汇总 msg 经 {@link TakePhotoListener#onFail} 返回（不 Toast）。
+     * 超出项会进入过滤确认弹窗：不合格区在上、将保留区在下；
+     * 用户可取消 / 重新选择 / 确认（无可用项时隐藏确认）。
      */
     public MediaPicker queryMaxFileSize(@FloatRange(from = 0) float maxFileSizeMb) {
         config.maxFileSizeMb = Math.max(0f, maxFileSizeMb);
@@ -75,8 +78,8 @@ public class MediaPicker {
 
     /**
      * 视频时长上限，单位秒。0 表示不限制。
-     * 超出项会被过滤：若仍有合法项则 Toast 汇总并 {@link TakePhotoListener#onSuccess}；
-     * 若全部被过滤则汇总 msg 经 {@link TakePhotoListener#onFail} 返回（不 Toast）。
+     * 超出项会进入过滤确认弹窗：不合格区在上、将保留区在下；
+     * 用户可取消 / 重新选择 / 确认（无可用项时隐藏确认）。
      */
     public MediaPicker videoMaxSecond(@IntRange(from = 0) int videoMaxSecond) {
         config.videoMaxSecond = Math.max(0, videoMaxSecond);
@@ -121,5 +124,16 @@ public class MediaPicker {
             return;
         }
         PhotoPickerLauncher.launch(context, config, listener);
+    }
+
+    /**
+     * 跳过系统 Picker，直接对给定 Uri 走过滤与确认弹窗（便于自测/调试）。
+     */
+    public void forResultWithUris(@NonNull List<Uri> uris, @NonNull TakePhotoListener listener) {
+        if (!config.withImage && !config.withVideo) {
+            listener.onFail("", "withImage and withVideo cannot both be false");
+            return;
+        }
+        PhotoPickerLauncher.processUris(context, config, uris, listener);
     }
 }

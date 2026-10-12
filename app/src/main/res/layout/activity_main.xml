@@ -58,6 +58,24 @@
             android:text="多选+限制 → copyToPath(true)" />
 
         <Button
+            android:id="@+id/btn_filter_partial"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="过滤自测：部分不合格" />
+
+        <Button
+            android:id="@+id/btn_filter_all_reject"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="过滤自测：全部不合格" />
+
+        <Button
+            android:id="@+id/btn_filter_all_ok"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="过滤自测：全部合格（无弹窗）" />
+
+        <Button
             android:id="@+id/btn_pick_single_video"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

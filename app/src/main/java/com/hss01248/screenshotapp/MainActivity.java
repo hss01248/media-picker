@@ -1,5 +1,6 @@
 package com.hss01248.screenshotapp;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -14,6 +15,7 @@ import com.hss01248.media_picker.MediaPickerFileUtil;
 import com.hss01248.media_picker.TakePhotoListener;
 import com.hss01248.picker_camera_wrapper.PickerCameraUtil;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,6 +70,14 @@ public class MainActivity extends AppCompatActivity {
                         .copyToPath(true)
                         .forResult(listener("限制多选-Path")));
 
+        // FilterTest: ok_under_20mb + bad_over_20mb（设备上已扫入 MediaStore）
+        findViewById(R.id.btn_filter_partial).setOnClickListener(v ->
+                runFilterSelfTest("过滤-部分不合格", filterTestUris(true, true)));
+        findViewById(R.id.btn_filter_all_reject).setOnClickListener(v ->
+                runFilterSelfTest("过滤-全部不合格", filterTestUris(false, true)));
+        findViewById(R.id.btn_filter_all_ok).setOnClickListener(v ->
+                runFilterSelfTest("过滤-全部合格", filterTestUris(true, false)));
+
         findViewById(R.id.btn_pick_single_video).setOnClickListener(v ->
                 MediaPicker.create(this)
                         .maxSelectNum(1)
@@ -108,6 +118,56 @@ public class MainActivity extends AppCompatActivity {
             appendResult(msg);
             toast(msg);
         });
+    }
+
+    private void runFilterSelfTest(String tag, List<Uri> uris) {
+        if (uris.isEmpty()) {
+            toast("FilterTest 媒体未入库，请确认 DCIM/FilterTest");
+            appendResult("[" + tag + "] missing FilterTest media");
+            return;
+        }
+        MediaPicker.create(this)
+                .maxSelectNum(9)
+                .maxVideoSelectNum(2)
+                .queryMaxFileSize(20)
+                .videoMaxSecond(15)
+                .withImage(true)
+                .withVideo(true)
+                .copyToPath(true)
+                .forResultWithUris(uris, listener(tag));
+    }
+
+    /**
+     * 自测素材放在应用外部私有目录，避免 MediaStore 权限导致偶发无法识别。
+     * 路径：Android/data/.../files/FilterTest/
+     */
+    private List<Uri> filterTestUris(boolean includeOk, boolean includeBad) {
+        List<Uri> out = new ArrayList<>(2);
+        if (includeOk) {
+            Uri ok = filterTestFileUri("ok_under_20mb.jpg");
+            if (ok != null) {
+                out.add(ok);
+            }
+        }
+        if (includeBad) {
+            Uri bad = filterTestFileUri("bad_over_20mb.jpg");
+            if (bad != null) {
+                out.add(bad);
+            }
+        }
+        return out;
+    }
+
+    @Nullable
+    private Uri filterTestFileUri(String name) {
+        File dir = new File(getExternalFilesDir(null), "FilterTest");
+        File file = new File(dir, name);
+        if (!file.isFile() || file.length() <= 0) {
+            LogUtils.w("FilterTest missing: " + file.getAbsolutePath());
+            return null;
+        }
+        // 同应用内自测用 file Uri；扩展名用于 mime / 大小可读
+        return Uri.fromFile(file);
     }
 
     private TakePhotoListener listener(String tag) {

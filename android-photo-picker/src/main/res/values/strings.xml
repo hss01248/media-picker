@@ -8,4 +8,16 @@
     <string name="media_picker_skip_max_select">%1$d item(s) exceed max selection (%2$d)</string>
     <string name="media_picker_skip_other">%1$d item(s) skipped</string>
     <string name="media_picker_fail_all_filtered">No valid media after filter</string>
+
+    <string name="media_picker_filter_rejected_title">%1$d item(s) do not meet requirements</string>
+    <string name="media_picker_filter_accepted_title">The following %1$d item(s) will be kept</string>
+    <string name="media_picker_filter_keep_order_hint">When the limit is exceeded, items are kept in selection order</string>
+    <string name="media_picker_filter_reason_too_large">Over %1$s MB</string>
+    <string name="media_picker_filter_reason_too_long">Over %1$d s</string>
+    <string name="media_picker_filter_reason_max_video">Over video limit</string>
+    <string name="media_picker_filter_reason_max_select">Over selection limit</string>
+    <string name="media_picker_filter_reason_other">Unavailable</string>
+    <string name="media_picker_btn_cancel">Cancel</string>
+    <string name="media_picker_btn_reselect">Reselect</string>
+    <string name="media_picker_btn_confirm">Confirm</string>
 </resources>

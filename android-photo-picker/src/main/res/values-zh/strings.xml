@@ -6,4 +6,16 @@
     <string name="media_picker_skip_max_select">%1$d 个项目超过可选数量（最多 %2$d 个）</string>
     <string name="media_picker_skip_other">已跳过 %1$d 个项目</string>
     <string name="media_picker_fail_all_filtered">过滤后没有可用媒体</string>
+
+    <string name="media_picker_filter_rejected_title">以下 %1$d 个不符合要求</string>
+    <string name="media_picker_filter_accepted_title">将保留以下 %1$d 个</string>
+    <string name="media_picker_filter_keep_order_hint">超出数量时按选择顺序保留</string>
+    <string name="media_picker_filter_reason_too_large">超过 %1$s MB</string>
+    <string name="media_picker_filter_reason_too_long">超过 %1$d 秒</string>
+    <string name="media_picker_filter_reason_max_video">超出视频数</string>
+    <string name="media_picker_filter_reason_max_select">超出可选数</string>
+    <string name="media_picker_filter_reason_other">无法使用</string>
+    <string name="media_picker_btn_cancel">取消</string>
+    <string name="media_picker_btn_reselect">重新选择</string>
+    <string name="media_picker_btn_confirm">确认</string>
 </resources>

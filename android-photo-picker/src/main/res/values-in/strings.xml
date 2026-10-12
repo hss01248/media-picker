@@ -6,4 +6,16 @@
     <string name="media_picker_skip_max_select">%1$d item melebihi jumlah pilihan maks (%2$d)</string>
     <string name="media_picker_skip_other">%1$d item dilewati</string>
     <string name="media_picker_fail_all_filtered">Tidak ada media valid setelah filter</string>
+
+    <string name="media_picker_filter_rejected_title">%1$d item tidak memenuhi syarat</string>
+    <string name="media_picker_filter_accepted_title">%1$d item berikut akan dipertahankan</string>
+    <string name="media_picker_filter_keep_order_hint">Jika melebihi batas, item dipertahankan sesuai urutan pilihan</string>
+    <string name="media_picker_filter_reason_too_large">Lebih dari %1$s MB</string>
+    <string name="media_picker_filter_reason_too_long">Lebih dari %1$d dtk</string>
+    <string name="media_picker_filter_reason_max_video">Melebihi batas video</string>
+    <string name="media_picker_filter_reason_max_select">Melebihi batas pilihan</string>
+    <string name="media_picker_filter_reason_other">Tidak tersedia</string>
+    <string name="media_picker_btn_cancel">Batal</string>
+    <string name="media_picker_btn_reselect">Pilih ulang</string>
+    <string name="media_picker_btn_confirm">Konfirmasi</string>
 </resources>
