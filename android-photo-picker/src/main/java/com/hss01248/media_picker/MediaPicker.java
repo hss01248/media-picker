@@ -9,7 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentActivity;
 
 import com.hss01248.media_picker.internal.PhotoPickerConfig;
-import com.hss01248.media_picker.internal.PhotoPickerTransActivity;
+import com.hss01248.media_picker.internal.PhotoPickerLauncher;
 
 /**
  * Android 官方 Photo Picker 封装。
@@ -120,6 +120,6 @@ public class MediaPicker {
             listener.onFail("", "withImage and withVideo cannot both be false");
             return;
         }
-        PhotoPickerTransActivity.start(context, config, listener);
+        PhotoPickerLauncher.launch(context, config, listener);
     }
 }

@@ -1,5 +1,5 @@
 
-rootProject.name = "ScreenshotApp"
+rootProject.name = "media-picker"
 
 include ':screenshoot'
 include ':app'

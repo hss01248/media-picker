@@ -4,12 +4,6 @@
     package="com.hss01248.media_picker">
 
     <application>
-        <activity
-            android:name=".internal.PhotoPickerTransActivity"
-            android:exported="false"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:configChanges="keyboardHidden|orientation|screenSize" />
-
         <!-- Trigger Google Play services to install the backported photo picker module. -->
         <service
             android:name="com.google.android.gms.metadata.ModuleDependencies"

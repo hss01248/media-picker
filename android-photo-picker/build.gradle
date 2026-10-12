@@ -28,6 +28,7 @@ dependencies {
 
     // Photo Picker Activity Result contracts，需 1.7.0+
     implementation 'androidx.activity:activity:1.8.2'
+    implementation "com.github.hss01248.StartActivityResult:activityresult2:2.0.2"
     api "com.hss01248.utilcodeEnhanceX:lib-base-base:2.2.49.14"
 
 }

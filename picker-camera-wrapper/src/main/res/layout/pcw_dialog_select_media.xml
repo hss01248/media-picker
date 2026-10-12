@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/pcw_pop_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/pcw_btn_take_photo"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/pcw_item_normal_bg_selector"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="@string/pcw_take_photo"
+        android:textSize="14dp" />
+
+    <View
+        android:id="@+id/pcw_divider_photo"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#f6f6f6" />
+
+    <TextView
+        android:id="@+id/pcw_btn_take_video"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/pcw_item_normal_bg_selector"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="@string/pcw_take_video"
+        android:textSize="14dp" />
+
+    <View
+        android:id="@+id/pcw_divider_video"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#f6f6f6" />
+
+    <TextView
+        android:id="@+id/pcw_btn_pick_album"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/pcw_item_normal_bg_selector"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="@string/pcw_choose_existing"
+        android:textSize="14dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:background="#E7E7E7" />
+
+    <TextView
+        android:id="@+id/pcw_btn_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/pcw_item_normal_bg_selector"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="@string/pcw_cancel"
+        android:textColor="#666666"
+        android:textSize="14dp" />
+
+</LinearLayout>

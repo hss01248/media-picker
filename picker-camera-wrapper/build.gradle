@@ -22,18 +22,11 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    viewBinding {
-        enabled = true
-    }
 }
 
 dependencies {
-
     implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'com.google.android.material:material:1.2.0'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    api "com.hss01248.utilcodeEnhanceX:lib-base-base:2.2.49.14"
-    api 'com.github.hss01248.MyPermission:ext:2.3.9'
-
+    implementation "com.github.hss01248.StartActivityResult:activityresult2:2.0.2"
+    api project(path: ':android-photo-picker')
+    api "com.github.hss01248.camerax:media-camerax:0.0.3"
 }

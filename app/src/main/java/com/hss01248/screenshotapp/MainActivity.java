@@ -12,6 +12,7 @@ import com.hss01248.media_picker.MediaCopyUtil;
 import com.hss01248.media_picker.MediaPicker;
 import com.hss01248.media_picker.MediaPickerFileUtil;
 import com.hss01248.media_picker.TakePhotoListener;
+import com.hss01248.picker_camera_wrapper.PickerCameraUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         tvResult = findViewById(R.id.tv_result);
+
+        findViewById(R.id.btn_wrapper_bottom_sheet).setOnClickListener(v ->
+                PickerCameraUtil.startPickOneWithDialog(this, listener("wrapper-弹窗")));
 
         findViewById(R.id.btn_pick_uri_image).setOnClickListener(v ->
                 MediaPicker.create(this)

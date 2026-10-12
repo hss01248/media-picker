@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pcw_take_photo">Kamera</string>
+    <string name="pcw_take_video">Rekam video</string>
+    <string name="pcw_choose_existing">Galeri</string>
+    <string name="pcw_cancel">Batal</string>
+</resources>

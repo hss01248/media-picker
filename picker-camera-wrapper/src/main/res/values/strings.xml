@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="accessibility_service_description">感知顶部app名字</string>
+    <string name="pcw_take_photo">Take a photo</string>
+    <string name="pcw_take_video">Record a video</string>
+    <string name="pcw_choose_existing">Album</string>
+    <string name="pcw_cancel">Cancel</string>
 </resources>
