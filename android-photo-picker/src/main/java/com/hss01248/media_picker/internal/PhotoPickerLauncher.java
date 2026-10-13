@@ -59,19 +59,26 @@ public final class PhotoPickerLauncher {
         }
 
         final boolean multi = config.maxSelectNum > 1;
-        final ActivityResultContracts.PickVisualMedia.VisualMediaType mediaType = resolveMediaType(config);
-        final PickVisualMediaRequest request = new PickVisualMediaRequest.Builder()
-                .setMediaType(mediaType)
-                .build();
-
         final Intent intent;
-        if (multi) {
-            int maxItems = Math.min(Math.max(2, config.maxSelectNum), 100);
-            intent = new ActivityResultContracts.PickMultipleVisualMedia(maxItems)
-                    .createIntent(activity, request);
+        // 系统 / OEM / GMS Photo Picker 可用时走官方 contract；不可用时勿再调
+        // PickVisualMedia.createIntent（其内部仍会落 ACTION_OPEN_DOCUMENT，且 ImageOnly
+        // 只设 type=image MIME，Android 9 DocumentsUI 常显示空的「近期图片」）。
+        if (ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(activity)) {
+            final ActivityResultContracts.PickVisualMedia.VisualMediaType mediaType =
+                    resolveMediaType(config);
+            final PickVisualMediaRequest request = new PickVisualMediaRequest.Builder()
+                    .setMediaType(mediaType)
+                    .build();
+            if (multi) {
+                int maxItems = Math.min(Math.max(2, config.maxSelectNum), 100);
+                intent = new ActivityResultContracts.PickMultipleVisualMedia(maxItems)
+                        .createIntent(activity, request);
+            } else {
+                intent = new ActivityResultContracts.PickVisualMedia()
+                        .createIntent(activity, request);
+            }
         } else {
-            intent = new ActivityResultContracts.PickVisualMedia()
-                    .createIntent(activity, request);
+            intent = createOpenDocumentIntent(config, multi);
         }
 
         final Runnable start = () -> {
@@ -141,6 +148,42 @@ public final class PhotoPickerLauncher {
             return ActivityResultContracts.PickVisualMedia.VideoOnly.INSTANCE;
         }
         return ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE;
+    }
+
+    /**
+     * 自行拼 SAF {@link Intent#ACTION_OPEN_DOCUMENT}，替代 AndroidX Photo Picker 的低版本回退。
+     * <p>
+     * 原因：{@code PickVisualMedia.createIntent} 在 Photo Picker 不可用时也会落到
+     * OPEN_DOCUMENT，但对 ImageOnly 只设置 {@code Intent.setType("image/...")}（单一 MIME）。
+     * Android 9 等机型的 DocumentsUI 会据此进入「手机上的近期图片」分支，列表经常为空；
+     * 而同时选图+视频时官方回退使用通配 type + {@link Intent#EXTRA_MIME_TYPES}，界面正常。
+     * 因此不可用时不再调用官方 API，统一自建：通配 type + EXTRA_MIME_TYPES 限定目标类型。
+     * 选完后的过滤、确认弹窗、拷贝仍由 {@link #processOnBackground} 等现有逻辑处理。
+     */
+    @NonNull
+    private static Intent createOpenDocumentIntent(@NonNull PhotoPickerConfig config,
+                                                   boolean multi) {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        // 必须用通配 type；目标类型放在 EXTRA_MIME_TYPES，勿单独 setType(image/...)
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, resolveMimeTypes(config));
+        if (multi) {
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        }
+        return intent;
+    }
+
+    /** 按 withImage / withVideo 生成 EXTRA_MIME_TYPES 数组。 */
+    @NonNull
+    private static String[] resolveMimeTypes(@NonNull PhotoPickerConfig config) {
+        if (config.withImage && config.withVideo) {
+            return new String[]{"image/*", "video/*"};
+        }
+        if (config.withVideo) {
+            return new String[]{"video/*"};
+        }
+        return new String[]{"image/*"};
     }
 
     private static void processOnBackground(Context context,
