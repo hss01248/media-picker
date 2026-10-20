@@ -4,6 +4,17 @@
     package="com.hss01248.media_picker">
 
     <application>
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="com.hss01248.media_picker.MediaPickerInit"
+                android:value="androidx.startup"
+                tools:node="merge" />
+        </provider>
+
         <!-- Trigger Google Play services to install the backported photo picker module. -->
         <service
             android:name="com.google.android.gms.metadata.ModuleDependencies"

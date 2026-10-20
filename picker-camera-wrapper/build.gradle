@@ -28,5 +28,5 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation "com.github.hss01248.StartActivityResult:activityresult2:2.0.2"
     api project(path: ':android-photo-picker')
-    api "com.github.hss01248.camerax:media-camerax:0.0.3"
+    api "com.github.hss01248.camerax:media-camerax:1.0.0"
 }
