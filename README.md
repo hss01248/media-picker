@@ -155,3 +155,5 @@ media-picker/
 ## License
 
 [MIT](LICENSE)
+
+> smoke test by dsh-superagent
